@@ -441,12 +441,12 @@ class King(Piece):
 		else:
 			pos = self.flip_index_table[self.position]
 		# make value depending on state of the game
-		self.value = self.tbl_king_end[pos] * (1 - current.gameIndex) + self.valuetbl[pos] * (current.gameIndex)
+		self.value = self.tbl_king_end[pos] * (current.gameIndex) + self.valuetbl[pos] * (1 -current.gameIndex)
 
 	def attackSquares(self, current):
 		validMoves = []
 		kingmoves = [1,11,10,9,-1,-11,-10,-9]
-			# TODO: check checks (hihi), castling
+		# TODO: check checks (hihi), castling
 		for move in kingmoves:
 			if mailbox[mailbox64[self.position] + move] >= 0 \
 				and not(self.inCheck(mailbox[mailbox64[self.position] + move], current)):
@@ -474,6 +474,7 @@ def print_help():
 	print("n - New Game")
 	print("q - Quit")
 	print("u - Undo Move")
+	print("t - Think and make best move")
 	print("Enter moves in Coordinate notation, e.g. g1f3")
 
 def translate_notation(token):
@@ -488,7 +489,6 @@ def translate_notation(token):
 
 # TODO make this recursive
 def bestMove(pos, col):
-	# copy initial position for restoration
 	maximum = 0
 	bestmove = None
 	# iterate through squares
@@ -549,8 +549,11 @@ while (token != "q"):
 		move += 1
 	elif len(token) == 4 or len(token) == 5:
 		tup = translate_notation(token)
-		now.movePiece(tup[0],tup[1])
-		move += 1
+		if now.board[tup[0]].color != sideToMove:
+			print("Illegal Move")
+		else:
+			now.movePiece(tup[0],tup[1])
+			move += 1
 	elif token == "q":
 		break
 	elif token == "u":
