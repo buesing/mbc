@@ -47,16 +47,6 @@ class Color(object):
 class IllegalMoveException(Exception):
 	pass
 
-def print_help():
-	print("In mbc you can use the following commands:")
-	print("e - Evaluate Position")
-	print("h - Help")
-	print("n - New Game")
-	print("q - Quit")
-	print("u - Undo Move")
-	print("t - Think and make best move")
-	print("Enter moves in Coordinate notation, e.g. g1f3")
-
 def translate_notation(token):
 	# TODO check validity
 	fromstr, tostr = token[:2],token[2:]
@@ -80,10 +70,11 @@ def bestMove(pos, col):
 			# iterate through allsquares
 			for tosq in possibleSquares:
 				try:
-					print("considering: ", type(piece), fromsq, tosq)
-					pos.movePiece(fromsq, tosq)
+					print("considering: ", type(piece), notation[fromsq], notation[tosq])
+					pos.movePiece(fromsq,tosq)
 				except IllegalMoveException:
 					# if this happens, something is seriously wrong
+					print("ILLEGAL MOVE!!!")
 					exit("ILLEGAL MOVE: ", type(piece), fromsq, tosq)
 				else:
 					# evaluate new position
