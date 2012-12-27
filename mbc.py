@@ -1,7 +1,6 @@
 #/usr/bin/env python
 
 from defs import *
-from pieces import *
 from position import Position
 
 def main():
