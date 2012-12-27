@@ -10,8 +10,11 @@ class Position(object):
 		self.moveList = []
 		# index is 1 in endgame
 		self.gameIndex = 0
+		# plies since last pawn move or capture
+		self.plies = 0
 		# TODO update this every move
-		self.currentEval = [1505,1505]
+		self.sideToMove = Color.WHITE
+		self.moveNumber = 0
 		self.board = [
 			Rook(0,Color.BLACK),
 			Knight(1,Color.BLACK),
@@ -33,6 +36,7 @@ class Position(object):
 			Bishop(61,Color.WHITE),
 			Knight(62,Color.WHITE),
 			Rook(63,Color.WHITE)]
+		self.currentEval = self.evaluate()
 
 	def __str__(self):
 		dottedLine = "+---+---+---+---+---+---+---+---+"
@@ -68,6 +72,10 @@ class Position(object):
 					except(IllegalMoveException):
 						print("Illegal move.")
 					else:
+						if self.sideToMove == Color.BLACK:
+							self.moveNumber += 1
+						self.plies = 0
+						self.currentEval = self.evaluate()
 						return True
 				elif isinstance(self.board[fromsq], King):
 					# king is moved but not castled, reduce castling rights
@@ -87,8 +95,16 @@ class Position(object):
 			print("Illegal move.")
 			return False
 		else:
+			if self.board[fromsq].code != 0 and not(self.board[tosq]):
+				self.plies += 1
+			else:
+				self.plies = 0
+			if self.sideToMove == Color.BLACK:
+				self.moveNumber += 1
+			self.moveNumber += 1
 			self.board[tosq] = self.board[fromsq]
 			self.board[fromsq] = None
+			self.currentEval = self.evaluate()
 			return True
 
 	def castle(self, cIndex):
@@ -116,14 +132,52 @@ class Position(object):
 	def evaluate(self):
 		black = 0
 		white = 0
-		for piece in self.board:
-			if piece:
-				if piece.color == Color.WHITE:
-					white += piece.value
-				elif piece.color == Color.BLACK:
-					black += piece.value
+		for p in self.board:
+			if p:
+				if p.color == Color.WHITE:
+					white += p.value
+				elif p.color == Color.BLACK:
+					black += p.value
 		return (white,black)
 	
 	def undo(self):
 		self = deepcopy(self.moveList[len(self.moveList)-2])
+	
+	def make_fen(self):
+		empty = -1
+		fen = ""
+		for i in range(len(self.board)):
+			if i % 8 == 0 and i != 0:
+				if empty > 0:
+					fen += str(empty)
+					empty = 0
+				fen += "/"
+			if not(self.board[i]):
+				if empty == -1:
+					empty = 1
+				else:
+					empty += 1
+			else:
+				if empty > 0:
+					fen += str(empty)
+				fen += str(self.board[i])
+		fen += " "
+		if self.sideToMove == Color.WHITE:
+			fen += "w"
+		else:
+			fen += "b"
+		fen += " "
+		cast = [self.castlingRights[1],self.castlingRights[0],self.castlingRights[3],self.castlingRights[2]]
+		fencast = "KQkq"
+		for i in range(len(cast)):
+			if cast[i]:
+				fen += fencast[i]
+		if self.epSquare != -1:
+			fen += notation[self.epSquare]
+		fen += " "
+		fen += str(self.plies)
+		fen += " "
+		fen += str(self.moveNumber)
+		return fen
+				
 
