@@ -3,6 +3,17 @@
 from defs import *
 from position import Position
 
+def print_help():
+	print("In mbc you can use the following commands:")
+	print("e - Evaluate Position")
+	print("h - Help")
+	print("n - New Game")
+	print("q - Quit")
+	print("u - Undo Move")
+	print("t - Think and make best move")
+	print("f - Print FEN String")
+	print("Enter moves in Coordinate notation, e.g. g1f3")
+
 def main():
 	now = Position()
 	p = 0
@@ -25,6 +36,7 @@ def main():
 		elif token == "t":
 			best = bestMove(now,sideToMove)
 			now.movePiece(best[0],best[1])
+			now.sideToMove = sideToMove
 			move += 1
 		elif len(token) == 4 or len(token) == 5:
 			tup = translate_notation(token)
@@ -32,11 +44,14 @@ def main():
 				print("Illegal Move")
 			else:
 				now.movePiece(tup[0],tup[1])
+				now.sideToMove = sideToMove
 				move += 1
 		elif token == "q":
 			break
 		elif token == "u":
 			now.undo()
+		elif token == "f":
+			print(now.make_fen())
 
 if __name__ == "__main__":
 	main()
