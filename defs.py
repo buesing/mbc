@@ -103,4 +103,3 @@ def bestMove(pos, col):
 					piece.position = fromsq
 					piece.updateValue(pos)
 	return bestmove
-
