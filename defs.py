@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 # mailbox representation to check validity of moves
 mailbox = [
 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -58,7 +60,8 @@ def translate_notation(token):
 	return (fromint,toint)
 
 # TODO make this recursive
-def bestMove(pos, col):
+def bestMove(posi, col):
+	pos = deepcopy(posi)
 	maximum = 0
 	bestmove = None
 	# iterate through squares

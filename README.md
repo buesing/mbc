@@ -1,4 +1,4 @@
 MBC
 ===
 
-mbc is a chess engine in an extremely young stadium, not even knowing the rules properly.
+mbc is a chess engine in a very primitive stadium.

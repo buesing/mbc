@@ -13,14 +13,14 @@ class Piece(object):
 		16, 17, 18, 19, 20, 21, 22, 23,
 		8,  9,  10, 11, 12, 13, 14, 15,
 		0,  1,   2,  3,  4,  5,  6,  7]
-	code = 0
+	code = 0 
 	valuetbl = [0]
-	init_value = piece_values[code]
 
 	def __init__(self, pos, col):
+		self.init_value = piece_values[self.code]
 		self.position = pos
 		self.color = col
-		# update value, cant use method because we need position
+		# update value
 		if self.color == Color.WHITE:
 			self.value = self.init_value + self.valuetbl[self.position]
 		else:
@@ -52,11 +52,11 @@ class Piece(object):
 			self.value = self.init_value + self.valuetbl[self.flip_index_table[self.position]]
 
 	def moveTo(self, tosq, current):
-		self.moveList.append(self)
 		# clean capture
 		if tosq in self.attackSquares(current):
 			self.position = tosq
 			self.updateValue(current)
+			self.moveList.append(self)
 		else:
 			raise IllegalMoveException()
 
@@ -190,11 +190,13 @@ class Rook(Piece):
 		validMoves = []
 		count = 1
 		iterate = [True, True, True, True]
+		iterate += [True, True, True, True]
 		# while at least one direction to move in
 		while True in iterate:
 			mIndex = mailbox64[self.position]
 			# indices for north, east, south and west
 			indexList = [mIndex - count*10, mIndex + count, mIndex + count*10, mIndex - count]
+			indexList += [mIndex - count*9, mIndex + count*11, mIndex + count*9, mIndex - count*11]
 			# check if we are out of bounds N, E, S or W
 			for directionIndex,i in enumerate(indexList):
 				if (iterate[directionIndex] and mailbox[i] > 0):
@@ -226,13 +228,40 @@ class Queen(Piece):
 		-20,-10,-10, -5, -5,-10,-10,-20]
 
 	def attackSquares(self, current):
+		validMoves = []
+		count = 1
+		iterate = [True, True, True, True]
+		# while at least one direction to move in
+		while True in iterate:
+			mIndex = mailbox64[self.position]
+			# indices for north, east, south and west
+			indexList = [mIndex - count*10, mIndex + count, mIndex + count*10, mIndex - count]
+			# check if we are out of bounds N, E, S or W
+			for directionIndex,i in enumerate(indexList):
+				if (iterate[directionIndex] and mailbox[i] > 0):
+					# if theres a piece on the square
+					if current.board[mailbox[i]]:
+						# we cant move further
+						iterate[directionIndex] = False
+						# if color is other color
+						if (current.board[mailbox[i]].color != self.color):
+							# we can capture
+							validMoves.append(mailbox[i])
+					# otherwise we can move there
+					else:
+						validMoves.append(mailbox[i])
+				else: iterate[directionIndex] = False
+			count += 1
+		return validMoves
+
 		# queens attack squares are rook U bishop
 		# they dont have any squares in common
 		# so we can just merge the lists and dont need to check for duplicates
 		b = Bishop(self.position, self.color)
 		r = Rook(self.position, self.color)
 		validMoves = b.attackSquares(current) + r.attackSquares(current)
-		print(validMoves)
+		#for m in validMoves:
+			#print(notation[m])
 		# clean up the waste
 		del b
 		del r
@@ -258,14 +287,6 @@ class King(Piece):
 		-30,-10, 20, 30, 30, 20,-10,-30,
 		-30,-30,  0,  0,  0,  0,-30,-30,
 		-50,-30,-30,-30,-30,-30,-30,-50]
-
-	def updateValue(self, current):
-		if self.color == Color.WHITE:
-			pos = self.position
-		else:
-			pos = self.flip_index_table[self.position]
-		# make value depending on state of the game
-		self.value = self.tbl_king_end[pos] * (current.gameIndex) + self.valuetbl[pos] * (1 -current.gameIndex)
 
 	def attackSquares(self, current):
 		validMoves = []

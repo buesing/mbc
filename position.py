@@ -179,5 +179,3 @@ class Position(object):
 		fen += " "
 		fen += str(self.moveNumber)
 		return fen
-				
-
