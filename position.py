@@ -60,7 +60,9 @@ class Position(object):
 		return s
 
 	def movePiece(self, fromsq, tosq):
-		# TODO validity checks, castling, promotion, enpassant
+		# TODO validity checks, promotion, enpassant
+		if not(self.board[fromsq]):
+			raise IllegalMoveException()
 		# check if move is castle
 		# TODO move all checks to pieces moveTo method, or we check this everytime
 		castleMoves = [(58,60),(62,60),(2,4),(6,4)]
@@ -70,7 +72,8 @@ class Position(object):
 					try: 
 						self.castle(mov)
 					except(IllegalMoveException):
-						print("Illegal move.")
+						print("Illegal move:", notation[fromsq], notation[tosq])
+						return False
 					else:
 						if self.sideToMove == Color.BLACK:
 							self.moveNumber += 1
@@ -92,7 +95,7 @@ class Position(object):
 		try:
 			self.board[fromsq].moveTo(tosq, self)
 		except IllegalMoveException:
-			print("Illegal move.")
+			print("Illegal move:", notation[fromsq], notation[tosq])
 			return False
 		else:
 			if self.board[fromsq].code != 0 and not(self.board[tosq]):

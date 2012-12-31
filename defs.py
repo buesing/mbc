@@ -60,8 +60,8 @@ def translate_notation(token):
 	return (fromint,toint)
 
 # TODO make this recursive
-def bestMove(posi, col):
-	pos = deepcopy(posi)
+def bestMove(argposition, col):
+	pos = deepcopy(argposition)
 	maximum = 0
 	bestmove = None
 	# iterate through squares
@@ -73,12 +73,9 @@ def bestMove(posi, col):
 			# iterate through allsquares
 			for tosq in possibleSquares:
 				try:
-					print("considering: ", type(piece), notation[fromsq], notation[tosq])
 					pos.movePiece(fromsq,tosq)
 				except IllegalMoveException:
-					# if this happens, something is seriously wrong
-					print("ILLEGAL MOVE!!!")
-					exit("ILLEGAL MOVE: ", type(piece), fromsq, tosq)
+					print("ILLEGAL MOVE!")
 				else:
 					# evaluate new position
 					scoreTuple = pos.evaluate()
@@ -87,13 +84,14 @@ def bestMove(posi, col):
 					else:
 						score = scoreTuple[1] - scoreTuple[0]
 					# if it scores better than max, make it new max
-					print("position value: ", score)
 					if score > maximum or bestmove == None:
 						maximum = score
 						bestmove = (fromsq, tosq)
 					# restore initial position
-					pos.board[fromsq] = piece
-					pos.board[tosq] = None
-					piece.position = fromsq
-					piece.updateValue(pos)
+					#pos.board[fromsq] = piece
+					#pos.board[tosq] = None
+					#piece.position = fromsq
+					#piece.updateValue(pos)
+					#print(pos)
+				pos = deepcopy(argposition)
 	return bestmove
