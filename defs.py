@@ -38,7 +38,7 @@ notation = [
 	"a1","b1","c1","d1","e1","f1","g1","h1"]
 
 # for the board printer
-piece_str = 'PNBRQK'
+piece_str = "PNBRQK"
 # lookup initial piece values
 piece_values = [100, 325, 325, 500, 975, 20000]
 
@@ -49,49 +49,36 @@ class Color(object):
 class IllegalMoveException(Exception):
 	pass
 
+class InvalidFENException(Exception):
+	pass
+
 def translate_notation(token):
 	# TODO check validity
-	fromstr, tostr = token[:2],token[2:]
-	for i in range(len(notation)):
-		if notation[i] == fromstr:
-			fromint = i
-		if notation[i] == tostr:
-			toint = i
-	return (fromint,toint)
+	return notation.index(token[:2]),notation.index(token[2:])
 
 # TODO make this recursive
-def bestMove(argposition, col):
-	pos = deepcopy(argposition)
-	maximum = 0
-	bestmove = None
+def bestMove(position, bestmove, depth):
+	if depth == 0:
+		return position.evaluate()
+	maximum = -99999999
 	# iterate through squares
-	for piece in pos.board:
+	for i in range(len(position.board)):
 		# if there is a piece and it's our color
-		if piece and piece.color == col:
-			possibleSquares = piece.attackSquares(pos)
-			fromsq = piece.position
+		if position.board[i] and position.board[i].color == color:
+			possibleSquares = position.board[i].attackSquares(position)
+			fromsq = position.board[i].position
 			# iterate through allsquares
 			for tosq in possibleSquares:
+				print(depth, type(position.board[i]), tosq)
 				try:
-					pos.movePiece(fromsq,tosq)
+					position.movePiece(fromsq,tosq)
 				except IllegalMoveException:
-					print("ILLEGAL MOVE!")
+					print("Illegal move in bestMove()")
 				else:
-					# evaluate new position
-					scoreTuple = pos.evaluate()
-					if col == Color.WHITE:
-						score = scoreTuple[0] - scoreTuple[1]
-					else:
-						score = scoreTuple[1] - scoreTuple[0]
+					score = -bestMove(depth - 1)
+					# TODO undo move here!!
 					# if it scores better than max, make it new max
-					if score > maximum or bestmove == None:
+					if score > maximum:
 						maximum = score
-						bestmove = (fromsq, tosq)
 					# restore initial position
-					#pos.board[fromsq] = piece
-					#pos.board[tosq] = None
-					#piece.position = fromsq
-					#piece.updateValue(pos)
-					#print(pos)
-				pos = deepcopy(argposition)
-	return bestmove
+	return maximum

@@ -13,11 +13,13 @@ class Piece(object):
 		16, 17, 18, 19, 20, 21, 22, 23,
 		8,  9,  10, 11, 12, 13, 14, 15,
 		0,  1,   2,  3,  4,  5,  6,  7]
-	code = 0 
 	valuetbl = [0]
 
+	def __int__(self):
+		return -1
+
 	def __init__(self, pos, col):
-		self.init_value = piece_values[self.code]
+		self.init_value = piece_values[int(self)]
 		self.position = pos
 		self.color = col
 		# update value
@@ -29,9 +31,9 @@ class Piece(object):
 
 	def __str__(self):
 		if self.color == Color.WHITE:
-			return piece_str[self.code] 
+			return piece_str[int(self)] 
 		else:
-			return piece_str[self.code].lower()
+			return piece_str[int(self)].lower()
 	
 	def __cmp__(self, other):
 		if self.value == other.value:
@@ -57,11 +59,11 @@ class Piece(object):
 			self.position = tosq
 			self.updateValue(current)
 			self.moveList.append(self)
+			return True
 		else:
-			raise IllegalMoveException()
+			return False
 
 class Pawn(Piece):
-	code = 0
 	valuetbl = [
 		0,  0,  0,  0,  0,  0,  0,  0,
 		50,50, 50, 50, 50, 50, 50, 50,
@@ -72,38 +74,40 @@ class Pawn(Piece):
 		5, 10, 10,-20,-20, 10, 10,  5,
 		0,  0,  0,  0,  0,  0,  0,  0]
 
+	def __int__(self):
+		return 0
+
 	# TODO promotion and so on
 	def attackSquares(self, current):
 		validMoves = []
 		caps = []
 		if self.color == Color.WHITE:
-			forward = self.position - 8
+			forward = mailbox64[self.position] - 10
 			double = self.position - 16
-			cap = [self.position - 9, self.position - 7]
+			caps = [mailbox64[self.position] - 11, mailbox64[self.position] - 9]
 			if self.position > 47:
-				if not(current.board[double]) and not(current.board[double]):
+				if not(current.board[double]) and not(current.board[mailbox[forward]]):
 					# append double step
 					validMoves.append(double)
 		else:
-			forward = self.position + 8
+			forward = mailbox64[self.position] + 10
 			double = self.position + 16
-			cap = [self.position + 9, self.position + 7]
+			caps = [mailbox64[self.position] + 11, mailbox64[self.position] + 9]
 			if self.position < 16:
-				if not(current.board[forward]) and not(current.board[double]):
+				if not(current.board[double]) and not(current.board[mailbox[forward]]):
 					# append double step
 					validMoves.append(double)
 				
 		# single step
-		if mailbox[mailbox64[forward]] and not(current.board[forward]):
-			validMoves.append(forward)
+		if mailbox[forward] >= 0 and not(current.board[mailbox[forward]]):
+			validMoves.append(mailbox[forward])
 		# captures
 		for m in caps:
-			if mailbox[mailbox64[m]] and current.board[m]:
-				validMoves.append(m)
+			if mailbox[m] >= 0 and current.board[mailbox[m]]:
+				validMoves.append(mailbox[m])
 		return validMoves
 
 class Knight(Piece):
-	code = 1
 	valuetbl = [
 		-50,-40,-30,-30,-30,-30,-40,-50,
 		-40,-20,  0,  0,  0,  0,-20,-40,
@@ -114,12 +118,15 @@ class Knight(Piece):
 		-40,-20,  0,  5,  5,  0,-20,-40,
 		-50,-40,-30,-30,-30,-30,-40,-50]
 
+	def __int__(self):
+		return 1
+
 	def attackSquares(self, current):
 		validMoves = []
 		knightmoves = [-21, -19, -8, 12, 21, 19, 8, -12]
 		for move in knightmoves:
 			# field is in bounds
-			if mailbox[mailbox64[self.position] + move] > 0:
+			if mailbox[mailbox64[self.position] + move] >= 0:
 				# field is not empty
 				if (current.board[mailbox[mailbox64[self.position] + move]]):
 					if current.board[mailbox[mailbox64[self.position] + move]].color != self.color:
@@ -130,7 +137,6 @@ class Knight(Piece):
 		return validMoves
 	
 class Bishop(Piece):
-	code = 2
 	valuetbl= [
 		-20,-10,-10,-10,-10,-10,-10,-20,
 		-10,  0,  0,  0,  0,  0,  0,-10,
@@ -140,6 +146,9 @@ class Bishop(Piece):
 		-10, 10, 10, 10, 10, 10, 10,-10,
 		-10,  5,  0,  0,  0,  0,  5,-10,
 		-20,-10,-10,-10,-10,-10,-10,-20]
+
+	def __int__(self):
+		return 2
 
 	def attackSquares(self, current):
 		validMoves = []
@@ -152,7 +161,7 @@ class Bishop(Piece):
 			indexList = [mIndex - count*9, mIndex + count*11, mIndex + count*9, mIndex - count*11]
 			# check if we are out of bounds N, E, S or W
 			for directionIndex,i in enumerate(indexList):
-				if (iterate[directionIndex] and mailbox[i] > 0):
+				if (iterate[directionIndex] and mailbox[i] >= 0):
 					# if theres a piece on the square
 					if (current.board[mailbox[i]]):
 						# we cant move further
@@ -169,7 +178,6 @@ class Bishop(Piece):
 		return validMoves
 
 class Rook(Piece):
-	code = 3
 	valuetbl = [
 		 0,  0,  0,  0,  0,  0,  0,  0,
 		 5, 10, 10, 10, 10, 10, 10,  5,
@@ -179,6 +187,9 @@ class Rook(Piece):
 		-5,  0,  0,  0,  0,  0,  0, -5,
 		-5,  0,  0,  0,  0,  0,  0, -5,
 		 0,  0,  0,  5,  5,  0,  0,  0]
+
+	def __int__(self):
+		return 3
 
 	def __str__(self):
 		if self.color == Color.WHITE:
@@ -199,7 +210,7 @@ class Rook(Piece):
 			indexList += [mIndex - count*9, mIndex + count*11, mIndex + count*9, mIndex - count*11]
 			# check if we are out of bounds N, E, S or W
 			for directionIndex,i in enumerate(indexList):
-				if (iterate[directionIndex] and mailbox[i] > 0):
+				if (iterate[directionIndex] and mailbox[i] >= 0):
 					# if theres a piece on the square
 					if current.board[mailbox[i]]:
 						# we cant move further
@@ -216,7 +227,6 @@ class Rook(Piece):
 		return validMoves
 
 class Queen(Piece):
-	code = 4
 	valuetbl= [
 		-20,-10,-10, -5, -5,-10,-10,-20,
 		-10,  0,  0,  0,  0,  0,  0,-10,
@@ -226,6 +236,9 @@ class Queen(Piece):
 		-10,  5,  5,  5,  5,  5,  0,-10,
 		-10,  0,  5,  0,  0,  0,  0,-10,
 		-20,-10,-10, -5, -5,-10,-10,-20]
+
+	def __int__(self):
+		return 4
 
 	def attackSquares(self, current):
 		validMoves = []
@@ -238,7 +251,7 @@ class Queen(Piece):
 			indexList = [mIndex - count*10, mIndex + count, mIndex + count*10, mIndex - count]
 			# check if we are out of bounds N, E, S or W
 			for directionIndex,i in enumerate(indexList):
-				if (iterate[directionIndex] and mailbox[i] > 0):
+				if (iterate[directionIndex] and mailbox[i] >= 0):
 					# if theres a piece on the square
 					if current.board[mailbox[i]]:
 						# we cant move further
@@ -268,7 +281,6 @@ class Queen(Piece):
 		return validMoves
 
 class King(Piece):
-	code = 5
 	valuetbl = [
 		-30,-40,-40,-50,-50,-40,-40,-30,
 		-30,-40,-40,-50,-50,-40,-40,-30,
@@ -288,10 +300,13 @@ class King(Piece):
 		-30,-30,  0,  0,  0,  0,-30,-30,
 		-50,-30,-30,-30,-30,-30,-30,-50]
 
+	def __int__(self):
+		return 5
+
 	def attackSquares(self, current):
 		validMoves = []
 		kingmoves = [1,11,10,9,-1,-11,-10,-9]
-		# TODO: check checks (hihi), castling
+		# TODO: check checks (hihi)
 		for move in kingmoves:
 			if mailbox[mailbox64[self.position] + move] >= 0 \
 				and not(self.inCheck(mailbox[mailbox64[self.position] + move], current)):

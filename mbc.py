@@ -19,13 +19,13 @@ def main():
 	p = 0
 	token = ""
 	move = 0
-	colors = [Color.WHITE, Color.BLACK]
+	sideToMove = Color.WHITE
 	print("Welcome to mbc - Enter h for help.")
 	while (token != "q"):
-		sideToMove = colors[move % 2]
+		sideToMove = 1 - sideToMove
 		if now:
 			print(now)
-		token = input("mbc>")
+		token = input("mbc> ")
 		if token == "h":
 			print_help()
 		elif token == "n":
@@ -34,24 +34,31 @@ def main():
 			score = now.evaluate()
 			print("White:",score[0],"Black:",score[1])
 		elif token == "t":
-			best = bestMove(now,sideToMove)
-			now.movePiece(best[0],best[1])
-			now.sideToMove = sideToMove
-			move += 1
+			best = bestMove(now,sideToMove, None, 2)
+			print(best)
+			try:
+				now.movePiece(best[0],best[1])
+			except IllegalMoveException:
+				print("bestMove has returned Illegal Move")
+			else:
+				move += 1
 		elif len(token) == 4 or len(token) == 5:
 			tup = translate_notation(token)
 			if now.board[tup[0]].color != sideToMove:
 				print("Illegal Move")
 			else:
-				now.movePiece(tup[0],tup[1])
-				now.sideToMove = sideToMove
-				move += 1
+				try:
+					now.movePiece(tup[0],tup[1])
+				except IllegalMoveException:
+					print("Illegal Move")
+				else:
+					move += 1
 		elif token == "q":
 			break
 		elif token == "u":
 			now.undo()
 		elif token == "f":
-			print(now.make_fen())
+			print(now.makeFen())
 
 if __name__ == "__main__":
 	main()
