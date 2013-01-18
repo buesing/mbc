@@ -53,7 +53,19 @@ class InvalidFENException(Exception):
 	pass
 
 def translate_notation(token):
-	# TODO check validity
+	le = len(token)
+	if le != 4 or le != 6:
+		raise IllegalMoveException
+	if not(token[:2] in notation):
+		raise IllegalMoveException
+	if not(token[2:4] in notation):
+		raise IllegalMoveException
+	if le == 6:
+		if le[4] != "=":
+			raise IllegalMoveException
+		if not(le[5] in "NBRQnbrq"):
+			raise IllegalMoveException
+		# TODO promotion
 	return notation.index(token[:2]),notation.index(token[2:])
 
 # TODO make this recursive

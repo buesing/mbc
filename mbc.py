@@ -12,6 +12,7 @@ def print_help():
 	print("u - Undo Move")
 	print("t - Think and make best move")
 	print("f - Print FEN String")
+	print("p <FEN STRING> - Parse FEN String")
 	print("Enter moves in Coordinate notation, e.g. g1f3")
 
 def main():
@@ -42,23 +43,29 @@ def main():
 				print("bestMove has returned Illegal Move")
 			else:
 				move += 1
-		elif len(token) == 4 or len(token) == 5:
-			tup = translate_notation(token)
-			if now.board[tup[0]].color != sideToMove:
-				print("Illegal Move")
-			else:
-				try:
-					now.movePiece(tup[0],tup[1])
-				except IllegalMoveException:
-					print("Illegal Move")
-				else:
-					move += 1
 		elif token == "q":
 			break
 		elif token == "u":
 			now.undo()
+		elif token[0] == "p":
+			now.parseFen(token[2:])
 		elif token == "f":
 			print(now.makeFen())
+		else:
+			try:
+				tup = translate_notation(token)
+			except:
+				print("Illegal Move")
+			else:
+				if now.board[tup[0]].color != sideToMove:
+					print("Illegal Move")
+				else:
+					try:
+						now.movePiece(tup[0],tup[1])
+					except IllegalMoveException:
+						print("Illegal Move")
+					else:
+						move += 1
 
 if __name__ == "__main__":
 	main()
