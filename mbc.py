@@ -4,26 +4,25 @@ from defs import *
 from position import Position
 
 def print_help():
-	print("In mbc you can use the following commands:")
-	print("e - Evaluate Position")
-	print("h - Help")
-	print("n - New Game")
+	print("\nIn mbc you can use the following commands:\n")
+	print("h - Display this help menu")
+	print("n - Start new game")
 	print("q - Quit")
+	print("e - Evaluate position")
 	print("u - Undo Move")
 	print("t - Think and make best move")
 	print("f - Print FEN String")
-	print("p <FEN STRING> - Parse FEN String")
+	print("p <FEN STRING> - Parse FEN String\n")
 	print("Enter moves in Coordinate notation, e.g. g1f3")
+	print("For promotion append \"=?\" where ? is the acronym")
+	print("for the piece you want to promote, e.g. c7c8=Q")
+	print("For castling, just move the King to the appropriate square (no 0-0)")
 
 def main():
 	now = Position()
-	p = 0
 	token = ""
-	move = 0
-	sideToMove = Color.WHITE
 	print("Welcome to mbc - Enter h for help.")
 	while (token != "q"):
-		sideToMove = 1 - sideToMove
 		if now:
 			print(now)
 		token = input("mbc> ")
@@ -35,14 +34,12 @@ def main():
 			score = now.evaluate()
 			print("White:",score[0],"Black:",score[1])
 		elif token == "t":
-			best = bestMove(now,sideToMove, None, 2)
+			best = bestMove(now, 2)
 			print(best)
 			try:
 				now.movePiece(best[0],best[1])
 			except IllegalMoveException:
 				print("bestMove has returned Illegal Move")
-			else:
-				move += 1
 		elif token == "q":
 			break
 		elif token == "u":
@@ -54,18 +51,21 @@ def main():
 		else:
 			try:
 				tup = translate_notation(token)
-			except:
-				print("Illegal Move")
+			except TranslateException as e:
+				print(e.msg)
 			else:
-				if now.board[tup[0]].color != sideToMove:
-					print("Illegal Move")
+				if now.board[tup[0]].color != now.sideToMove:
+					print("Illegal Move: wrong side to move")
 				else:
-					try:
-						now.movePiece(tup[0],tup[1])
-					except IllegalMoveException:
-						print("Illegal Move")
+					if len(tup) == 3:
+						try:
+							now.movePiece(tup[0],tup[1],tup[2])
+						except IllegalMoveException:
+							print("Illegal Move: couldnt promote")
 					else:
-						move += 1
-
+						try:
+							now.movePiece(tup[0],tup[1])
+						except IllegalMoveException:
+							print("Illegal Move: couldnt move piece")
 if __name__ == "__main__":
 	main()

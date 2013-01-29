@@ -1,5 +1,6 @@
 from pieces import *
 from defs import *
+from string import digits
 
 class Position(object):
 	def __init__(self):
@@ -37,7 +38,7 @@ class Position(object):
 			Knight(62,Color.WHITE),
 			Rook(63,Color.WHITE)]
 		self.currentEval = self.evaluate()
-		self.fenList = [self.makeFen()]
+		self.fenList = []
 
 	def __str__(self):
 		dottedLine = "+---+---+---+---+---+---+---+---+"
@@ -60,70 +61,89 @@ class Position(object):
 		s += "\n  " + "  A   B   C   D   E   F   G   H\n"
 		return s
 
-	def movePiece(self, fromsq, tosq):
+	def movePiece(self, fromsq, tosq, promotion = None):
+		if promotion is not None:
+			if promotion == "Q":
+				self.board[tosq] = Queen(tosq, self.sideToMove)
+			elif promotion == "R":
+				self.board[tosq] = Rook(tosq, self.sideToMove)
+			elif promotion == "B":
+				self.board[tosq] = Bishop(tosq, self.sideToMove)
+			elif promotion == "N":
+				self.board[tosq] = Knight(tosq, self.sideToMove)
+			self.board[tosq].updateValue(self)
+			self.board[fromsq] = None
+			self.afterMoveRoutine(tosq, True)
+			return
+		self.fenList.append(self.makeFen())
 		# TODO validity checks, promotion, enpassant
 		if not(self.board[fromsq]):
+			self.fenList = self.fenList[:len(self.fenList) - 1]
 			raise IllegalMoveException
-			return False
-		# check if move is castle
+			return
 		# TODO move all checks to pieces moveTo method, or we check this everytime
-		castleMoves = [(58,60),(62,60),(2,4),(6,4)]
-		for mov in range(4):
-			if fromsq == castleMoves[mov][1]:
-				if tosq == castleMoves[mov][0]:
-					if self.castle(mov):
-						if self.sideToMove == Color.BLACK:
-							self.moveNumber += 1
-						self.plies = 0
-						self.currentEval = self.evaluate()
-						self.fenList.append(self.makeFen)
-						self.sideToMove = 1 - self.sideToMove
-						return True
+		if isinstance(self.board[fromsq], King):
+			# TODO this is a little redundant. everytime the king is moved we reset castling rights
+			castleMoves = [(58,60),(62,60),(2,4),(6,4)]
+			# check if move is castle
+			for mov in range(4):
+				if fromsq == castleMoves[mov][1] and tosq == castleMoves[mov][0]:
+					try:
+						self.castle(mov)
+					except IllegalMoveException:
+						self.fenList = self.fenList[:len(self.fenList) - 1]
+						raise
+						return
 					else:
-						raise IllegalMoveException
-						return False
-				elif isinstance(self.board[fromsq], King):
-					# king is moved but not castled, reduce castling rights
-					if self.board[fromsq].color == Color.WHITE:
-						self.castlingRights[0] = False
-						self.castlingRights[1] = False
-					else:
-						self.castlingRights[2] = False
-						self.castlingRights[3] = False
+						self.afterMoveRoutine(tosq, True)
+						return
 		# check if rook moved to reduce castling rights
 		rookinits = [56, 63, 0, 15]
 		if fromsq in rookinits and isinstance(self.board[fromsq], Rook):
 			self.castlingRights[rookinits.index(fromsq)] = False
 		if self.board[fromsq].moveTo(tosq, self):
-			if int(self.board[fromsq]) != 0 and not(self.board[tosq]):
-				self.plies += 1
-			else:
-				self.plies = 0
-			if self.sideToMove == Color.BLACK:
-				self.moveNumber += 1
-			self.moveNumber += 1
 			self.board[tosq] = self.board[fromsq]
 			self.board[fromsq] = None
-			self.currentEval = self.evaluate()
-			self.fenList.append(self.makeFen)
-			self.sideToMove = 1 - self.sideToMove
-			return True
+			self.afterMoveRoutine(tosq, (int(self.board[tosq]) == 0 or self.board[tosq]))
+			return 
 		else:
+			self.fenList = self.fenList[:len(self.fenList) - 1]
 			raise IllegalMoveException
-			return False
+			return
+	
+	def afterMoveRoutine(self,updateSq, resetPlies):
+		# check if king is in check
+		for piece in self.board:
+			if isinstance(piece, King) and piece.color == self.sideToMove:
+				if piece.inCheck(piece.position, self):
+					self.fenList = self.fenList[:len(self.fenList) - 1]
+					raise IllegalMoveException("King is put in check")
+					return
+		if self.sideToMove == Color.BLACK:
+			self.moveNumber += 1
+		if resetPlies:
+			self.plies = 0
+		else:
+			self.plies += 1
+		self.currentEval = self.evaluate()
+		self.sideToMove = 1 - self.sideToMove
 
 	def castle(self, cIndex):
+		print(cIndex)
 		# cIndex: white queenside, white kingside, black queenside, black kingside
+		print(self.castlingRights[cIndex])
 		if not(self.castlingRights[cIndex]):
-			raise IllegalMoveException
+			raise IllegalMoveException("No castling rights")
+			return
 		# fields that need to be free:
 		free = [range(57,60), [61, 62], range(1,4), [5,6]]
 		for i in free[cIndex]:
 			if self.board[i]:
-				return False
+				raise IllegalMoveException("No castling rights")
+				return
 		moves = [(58,60,59,56),(62,60,61,63),(2,4,3,0),(6,4,5,7)]
 		# fields are free and we have castling rights
-		# good players always move the king first
+		# pros always move the king first
 		self.board[moves[cIndex][0]] = self.board[moves[cIndex][1]]
 		self.board[moves[cIndex][1]] = None
 		self.board[moves[cIndex][0]].position = moves[cIndex][0]
@@ -133,8 +153,30 @@ class Position(object):
 		self.board[moves[cIndex][3]] = None
 		self.board[moves[cIndex][2]].position = moves[cIndex][0]
 		self.board[moves[cIndex][0]].updateValue(self)
-		return True
+		# reduce castling rights
+		if self.board[moves[cIndex][0]].color == Color.WHITE:
+			self.castlingRights[0] = False
+			self.castlingRights[1] = False
+		else:
+			self.castlingRights[2] = False
+			self.castlingRights[3] = False
+		return
 				
+	def promote(self, fromsq, tosq, prom):
+		try:
+			self.movePiece(fromsq, tosq)
+		except IllegalMoveException:
+			print("Illegal Move")
+		char = prom.upper()
+		if char == "N":
+			board[tosq] = Knight(tosq,self.sideToMove)
+		elif char == "B":
+			board[tosq] = Bishop(tosq,self.sideToMove)
+		elif char == "R":
+			board[tosq] = Rook(tosq,self.sideToMove)
+		elif char == "Q":
+			board[tosq] = Queen(tosq,self.sideToMove)
+		
 	def evaluate(self):
 		black = 0
 		white = 0
@@ -150,8 +192,11 @@ class Position(object):
 			return black - white
 	
 	def undo(self):
-		self.paseFen(self.fenList[len(fenList)-2])
-		self.fenList = self.fenList[:len(fenList)-2]
+		if len(self.fenList):
+			self.parseFen(self.fenList[len(self.fenList)-1])
+			self.fenList = self.fenList[:len(self.fenList)-1]
+		else:
+			print("No move to undo.")
 	
 	def makeFen(self):
 		empty = -1
@@ -186,24 +231,28 @@ class Position(object):
 			for i in range(len(cast)):
 				if cast[i]:
 					fen += fencast[i]
+		fen += " "
 		if self.epSquare != -1:
 			fen += notation[self.epSquare]
+		else:
+			fen += "-"
 		fen += " "
 		fen += str(self.plies)
 		fen += " "
 		fen += str(self.moveNumber)
 		return fen
 	
-	def parseFen(self, fen):
-		fen = fen.split(" ")
+	def parseFen(self, afen):
+		fen = afen.split(" ")
 		if len(fen) != 6:
-			raise InvalidFENException
+			raise InvalidFENException("Length is not 6")
 		brd = fen[0].replace("/", "")
 		index = 0
+		# board parsing
 		for char in brd:
-			if char.isalnum():
+			if char in digits:
 				for i in range(int(char)):
-					board[index] = None
+					self.board[index] = None
 					index += 1
 			else:
 				if char.islower():
@@ -212,24 +261,28 @@ class Position(object):
 				else:
 					color = Color.WHITE
 				if char == "P":
-					board[index] = Pawn(index,color)
+					self.board[index] = Pawn(index,color)
 				elif char == "N":
-					board[index] = Knight(index,color)
+					self.board[index] = Knight(index,color)
 				elif char == "B":
-					board[index] = Bishop(index,color)
+					self.board[index] = Bishop(index,color)
 				elif char == "R":
-					board[index] = Rook(index,color)
+					self.board[index] = Rook(index,color)
 				elif char == "Q":
-					board[index] = Queen(index,color)
+					self.board[index] = Queen(index,color)
 				elif char == "K":
-					board[index] = Queen(index,color)
+					self.board[index] = King(index,color)
+				else:
+					raise InvalidFENException("Unable to parse piece")
 				index += 1
+		# side to move
 		if fen[1] == "w":
 			self.sideToMove = Color.WHITE
 		elif fen[1] == "b":
-			self.sideToMove = BLACK
+			self.sideToMove = Color.BLACK
 		else:
-			raise InvalidFENException
+			raise InvalidFENException("Side to move is invalid")
+		# castling rights
 		fencastle = "QKqk"
 		if fen[2] == "-":
 			self.castlingRights = [False for i in range(4)]
@@ -238,14 +291,16 @@ class Position(object):
 				self.castlingRights[i] = True
 			else:
 				self.castlingRights[i] = False
+		# en passant square
 		if fen[3] == "-":
 			self.epSquare = -1
 		elif fen[3] in notation:
 			self.epSquare = notation.index(fen[3])
 		else:
-			raise InvalidFENException
+			raise InvalidFENException("En passant square is invalid")
+		# plies + move number
 		try:
 			self.plies = int(fen[4])
 			self.moveNumber = int(fen[5])
 		except:
-			raise InvalidFENException
+			raise InvalidFENException("Plies or move number is invalid")

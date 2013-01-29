@@ -1,7 +1,7 @@
 from copy import deepcopy
 
 # mailbox representation to check validity of moves
-mailbox = [
+MAILBOX = [
 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 	-1,  0,  1,  2,  3,  4,  5,  6,  7, -1,
@@ -16,7 +16,7 @@ mailbox = [
 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
 
 # mailbox 64 to translate positions to mailbox layout
-mailbox64 = [
+MAILBOX64 = [
 	21, 22, 23, 24, 25, 26, 27, 28,
 	31, 32, 33, 34, 35, 36, 37, 38,
 	41, 42, 43, 44, 45, 46, 47, 48,
@@ -27,7 +27,7 @@ mailbox64 = [
 	91, 92, 93, 94, 95, 96, 97, 98]
 
 # notation for easily translating
-notation = [
+NOTATION = [
 	"a8","b8","c8","d8","e8","f8","g8","h8",
 	"a7","b7","c7","d7","e7","f7","g7","h7",
 	"a6","b6","c6","d6","e6","f6","g6","h6",
@@ -38,9 +38,9 @@ notation = [
 	"a1","b1","c1","d1","e1","f1","g1","h1"]
 
 # for the board printer
-piece_str = "PNBRQK"
+PIECE_STR = "PNBRQK"
 # lookup initial piece values
-piece_values = [100, 325, 325, 500, 975, 20000]
+PIECE_VALUES = [100, 325, 325, 500, 975, 20000]
 
 class Color(object):
 	WHITE = 0
@@ -50,33 +50,40 @@ class IllegalMoveException(Exception):
 	pass
 
 class InvalidFENException(Exception):
-	pass
+	def __init__(self, msg):
+		self.message = msg
+	def __str__(self):
+		return self.message
+
+class TranslateException(Exception):
+	def __init__(self, msg):
+		self.message = msg
+	def __str__(self):
+		return self.message
 
 def translate_notation(token):
 	le = len(token)
-	if le != 4 or le != 6:
-		raise IllegalMoveException
-	if not(token[:2] in notation):
-		raise IllegalMoveException
-	if not(token[2:4] in notation):
-		raise IllegalMoveException
+	if le != 4 and le != 6:
+		raise TranslateException("Token length wrong")
+	if not(token[:2] in NOTATION) or not(token[2:4] in NOTATION):
+		raise TranslateException("Token not recognized")
 	if le == 6:
-		if le[4] != "=":
-			raise IllegalMoveException
-		if not(le[5] in "NBRQnbrq"):
-			raise IllegalMoveException
+		if token[4] != "=":
+			raise TranslateException
+		if not(token[5] in "NBRQnbrq"):
+			raise TranslateException
+		return NOTATION.index(token[:2]),NOTATION.index(token[2:4]),token[5].upper()
 		# TODO promotion
-	return notation.index(token[:2]),notation.index(token[2:])
+	return NOTATION.index(token[:2]),NOTATION.index(token[2:])
 
 # TODO make this recursive
-def bestMove(position, bestmove, depth):
-	if depth == 0:
-		return position.evaluate()
+def bestMove(position, depth):
+	if depth == 0: return position.evaluate()
 	maximum = -99999999
 	# iterate through squares
 	for i in range(len(position.board)):
 		# if there is a piece and it's our color
-		if position.board[i] and position.board[i].color == color:
+		if position.board[i] and position.board[i].color == position.sideToMove:
 			possibleSquares = position.board[i].attackSquares(position)
 			fromsq = position.board[i].position
 			# iterate through allsquares
@@ -87,8 +94,9 @@ def bestMove(position, bestmove, depth):
 				except IllegalMoveException:
 					print("Illegal move in bestMove()")
 				else:
-					score = -bestMove(depth - 1)
+					score = -bestMove(position, depth - 1)
 					# TODO undo move here!!
+					position.undo()
 					# if it scores better than max, make it new max
 					if score > maximum:
 						maximum = score

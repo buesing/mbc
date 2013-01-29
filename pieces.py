@@ -19,7 +19,7 @@ class Piece(object):
 		return -1
 
 	def __init__(self, pos, col):
-		self.init_value = piece_values[int(self)]
+		self.init_value = PIECE_VALUES[int(self)]
 		self.position = pos
 		self.color = col
 		# update value
@@ -31,9 +31,9 @@ class Piece(object):
 
 	def __str__(self):
 		if self.color == Color.WHITE:
-			return piece_str[int(self)] 
+			return PIECE_STR[int(self)] 
 		else:
-			return piece_str[int(self)].lower()
+			return PIECE_STR[int(self)].lower()
 	
 	def __cmp__(self, other):
 		if self.value == other.value:
@@ -82,29 +82,29 @@ class Pawn(Piece):
 		validMoves = []
 		caps = []
 		if self.color == Color.WHITE:
-			forward = mailbox64[self.position] - 10
+			forward = MAILBOX64[self.position] - 10
 			double = self.position - 16
-			caps = [mailbox64[self.position] - 11, mailbox64[self.position] - 9]
+			caps = [MAILBOX64[self.position] - 11, MAILBOX64[self.position] - 9]
 			if self.position > 47:
-				if not(current.board[double]) and not(current.board[mailbox[forward]]):
+				if not(current.board[double]) and not(current.board[MAILBOX[forward]]):
 					# append double step
 					validMoves.append(double)
 		else:
-			forward = mailbox64[self.position] + 10
+			forward = MAILBOX64[self.position] + 10
 			double = self.position + 16
-			caps = [mailbox64[self.position] + 11, mailbox64[self.position] + 9]
+			caps = [MAILBOX64[self.position] + 11, MAILBOX64[self.position] + 9]
 			if self.position < 16:
-				if not(current.board[double]) and not(current.board[mailbox[forward]]):
+				if not(current.board[double]) and not(current.board[MAILBOX[forward]]):
 					# append double step
 					validMoves.append(double)
 				
 		# single step
-		if mailbox[forward] >= 0 and not(current.board[mailbox[forward]]):
-			validMoves.append(mailbox[forward])
+		if MAILBOX[forward] >= 0 and not(current.board[MAILBOX[forward]]):
+			validMoves.append(MAILBOX[forward])
 		# captures
 		for m in caps:
-			if mailbox[m] >= 0 and current.board[mailbox[m]]:
-				validMoves.append(mailbox[m])
+			if MAILBOX[m] >= 0 and current.board[MAILBOX[m]]:
+				validMoves.append(MAILBOX[m])
 		return validMoves
 
 class Knight(Piece):
@@ -126,14 +126,14 @@ class Knight(Piece):
 		knightmoves = [-21, -19, -8, 12, 21, 19, 8, -12]
 		for move in knightmoves:
 			# field is in bounds
-			if mailbox[mailbox64[self.position] + move] >= 0:
+			if MAILBOX[MAILBOX64[self.position] + move] >= 0:
 				# field is not empty
-				if (current.board[mailbox[mailbox64[self.position] + move]]):
-					if current.board[mailbox[mailbox64[self.position] + move]].color != self.color:
-						validMoves.append(mailbox[mailbox64[self.position] + move])
+				if (current.board[MAILBOX[MAILBOX64[self.position] + move]]):
+					if current.board[MAILBOX[MAILBOX64[self.position] + move]].color != self.color:
+						validMoves.append(MAILBOX[MAILBOX64[self.position] + move])
 				# field is empty
 				else:
-					validMoves.append(mailbox[mailbox64[self.position] + move])
+					validMoves.append(MAILBOX[MAILBOX64[self.position] + move])
 		return validMoves
 	
 class Bishop(Piece):
@@ -156,23 +156,23 @@ class Bishop(Piece):
 		iterate = [True, True, True, True]
 		# while at least one direction to move in
 		while True in iterate:
-			mIndex = mailbox64[self.position]
+			mIndex = MAILBOX64[self.position]
 			# indices for north, east, south and west
 			indexList = [mIndex - count*9, mIndex + count*11, mIndex + count*9, mIndex - count*11]
 			# check if we are out of bounds N, E, S or W
 			for directionIndex,i in enumerate(indexList):
-				if (iterate[directionIndex] and mailbox[i] >= 0):
+				if iterate[directionIndex] and MAILBOX[i] >= 0:
 					# if theres a piece on the square
-					if (current.board[mailbox[i]]):
+					if (current.board[MAILBOX[i]]):
 						# we cant move further
 						iterate[directionIndex] = False
 						# if color is other color
-						if (current.board[mailbox[i]].color != self.color):
+						if (current.board[MAILBOX[i]].color != self.color):
 							# we can capture
-							validMoves.append(mailbox[i])
+							validMoves.append(MAILBOX[i])
 					# otherwise we can move there
 					else:
-						validMoves.append(mailbox[i])
+						validMoves.append(MAILBOX[i])
 				else: iterate[directionIndex] = False
 			count += 1
 		return validMoves
@@ -201,27 +201,25 @@ class Rook(Piece):
 		validMoves = []
 		count = 1
 		iterate = [True, True, True, True]
-		iterate += [True, True, True, True]
 		# while at least one direction to move in
 		while True in iterate:
-			mIndex = mailbox64[self.position]
+			mIndex = MAILBOX64[self.position]
 			# indices for north, east, south and west
 			indexList = [mIndex - count*10, mIndex + count, mIndex + count*10, mIndex - count]
-			indexList += [mIndex - count*9, mIndex + count*11, mIndex + count*9, mIndex - count*11]
 			# check if we are out of bounds N, E, S or W
 			for directionIndex,i in enumerate(indexList):
-				if (iterate[directionIndex] and mailbox[i] >= 0):
+				if iterate[directionIndex] and MAILBOX[i] >= 0:
 					# if theres a piece on the square
-					if current.board[mailbox[i]]:
+					if current.board[MAILBOX[i]]:
 						# we cant move further
 						iterate[directionIndex] = False
 						# if color is other color
-						if (current.board[mailbox[i]].color != self.color):
+						if current.board[MAILBOX[i]].color != self.color:
 							# we can capture
-							validMoves.append(mailbox[i])
+							validMoves.append(MAILBOX[i])
 					# otherwise we can move there
 					else:
-						validMoves.append(mailbox[i])
+						validMoves.append(MAILBOX[i])
 				else: iterate[directionIndex] = False
 			count += 1
 		return validMoves
@@ -243,41 +241,29 @@ class Queen(Piece):
 	def attackSquares(self, current):
 		validMoves = []
 		count = 1
-		iterate = [True, True, True, True]
+		iterate = [True for i in range(8)]
 		# while at least one direction to move in
 		while True in iterate:
-			mIndex = mailbox64[self.position]
+			mIndex = MAILBOX64[self.position]
 			# indices for north, east, south and west
 			indexList = [mIndex - count*10, mIndex + count, mIndex + count*10, mIndex - count]
+			indexList += [mIndex - count*9, mIndex + count*11, mIndex + count*9, mIndex - count*11]
 			# check if we are out of bounds N, E, S or W
 			for directionIndex,i in enumerate(indexList):
-				if (iterate[directionIndex] and mailbox[i] >= 0):
+				if iterate[directionIndex] and MAILBOX[i] >= 0:
 					# if theres a piece on the square
-					if current.board[mailbox[i]]:
+					if current.board[MAILBOX[i]]:
 						# we cant move further
 						iterate[directionIndex] = False
 						# if color is other color
-						if (current.board[mailbox[i]].color != self.color):
+						if current.board[MAILBOX[i]].color != self.color:
 							# we can capture
-							validMoves.append(mailbox[i])
+							validMoves.append(MAILBOX[i])
 					# otherwise we can move there
 					else:
-						validMoves.append(mailbox[i])
+						validMoves.append(MAILBOX[i])
 				else: iterate[directionIndex] = False
 			count += 1
-		return validMoves
-
-		# queens attack squares are rook U bishop
-		# they dont have any squares in common
-		# so we can just merge the lists and dont need to check for duplicates
-		b = Bishop(self.position, self.color)
-		r = Rook(self.position, self.color)
-		validMoves = b.attackSquares(current) + r.attackSquares(current)
-		#for m in validMoves:
-			#print(notation[m])
-		# clean up the waste
-		del b
-		del r
 		return validMoves
 
 class King(Piece):
@@ -308,13 +294,13 @@ class King(Piece):
 		kingmoves = [1,11,10,9,-1,-11,-10,-9]
 		# TODO: check checks (hihi)
 		for move in kingmoves:
-			if mailbox[mailbox64[self.position] + move] >= 0 \
-				and not(self.inCheck(mailbox[mailbox64[self.position] + move], current)):
-				if current.board[mailbox[mailbox64[self.position] + move]]:
-					if current.board[mailbox[mailbox64[self.position] + move]].color != self.color:
-						validMoves.append(mailbox[mailbox64[self.position] + move])
+			if MAILBOX[MAILBOX64[self.position] + move] >= 0 \
+				and not(self.inCheck(MAILBOX[MAILBOX64[self.position] + move], current)):
+				if current.board[MAILBOX[MAILBOX64[self.position] + move]]:
+					if current.board[MAILBOX[MAILBOX64[self.position] + move]].color != self.color:
+						validMoves.append(MAILBOX[MAILBOX64[self.position] + move])
 				else:
-					validMoves.append(mailbox[mailbox64[self.position] + move])
+					validMoves.append(MAILBOX[MAILBOX64[self.position] + move])
 		return validMoves
 
 	def inCheck(self, pos, current):
@@ -326,4 +312,3 @@ class King(Piece):
 					return True
 		else:
 			return False
-
