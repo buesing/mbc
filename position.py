@@ -79,7 +79,7 @@ class Position(object):
 		# TODO validity checks, promotion, enpassant
 		if not(self.board[fromsq]):
 			self.fenList = self.fenList[:len(self.fenList) - 1]
-			raise IllegalMoveException
+			raise IllegalMoveException("No piece on that square")
 			return
 		# TODO move all checks to pieces moveTo method, or we check this everytime
 		if isinstance(self.board[fromsq], King):
@@ -108,7 +108,7 @@ class Position(object):
 			return 
 		else:
 			self.fenList = self.fenList[:len(self.fenList) - 1]
-			raise IllegalMoveException
+			raise IllegalMoveException("Piece can't move there")
 			return
 	
 	def afterMoveRoutine(self,updateSq, resetPlies):

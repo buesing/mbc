@@ -56,16 +56,16 @@ def main():
 			else:
 				if now.board[tup[0]].color != now.sideToMove:
 					print("Illegal Move: wrong side to move")
+				elif len(tup) == 3:
+					try:
+						now.movePiece(tup[0],tup[1],tup[2])
+					except IllegalMoveException as e:
+						print(e.msg)
 				else:
-					if len(tup) == 3:
-						try:
-							now.movePiece(tup[0],tup[1],tup[2])
-						except IllegalMoveException:
-							print("Illegal Move: couldnt promote")
-					else:
-						try:
-							now.movePiece(tup[0],tup[1])
-						except IllegalMoveException:
-							print("Illegal Move: couldnt move piece")
+					try:
+						now.movePiece(tup[0],tup[1])
+					except IllegalMoveException as e:
+						print(e.msg)
+
 if __name__ == "__main__":
 	main()
